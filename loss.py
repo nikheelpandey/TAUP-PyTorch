@@ -1,5 +1,5 @@
 import torch
-import torch.nn
+import torch.nn as nn
 
 class ContrastiveLoss(nn.Module):
 
@@ -12,6 +12,7 @@ class ContrastiveLoss(nn.Module):
 
         x = torch.cat((xi,xj),dim=0)
         is_cuda = xi.is_cuda 
+        N, _ = xi.shape
 
         # nominator : -->  e^ (sim(positive pair) / temp)
         # why normalize ?
@@ -33,5 +34,6 @@ class ContrastiveLoss(nn.Module):
         norm_sum = torch.exp(torch.ones(x.size(0)) / self.temp)
         norm_sum = norm_sum.cuda() if is_cuda else norm_sum
         loss = torch.mean(-torch.log(sim_match/ (torch.sum(sim_mat, dim=-1)- norm_sum)))
-        return loss
+        
+        return loss / 2*N
 

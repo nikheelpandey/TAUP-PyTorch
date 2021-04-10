@@ -30,7 +30,7 @@ class ProjectionHead(nn.Module):
 
 
 class ContrastiveLearner(nn.Module):
-    def __init__(self, backbone=None, projection_head=None):
+    def __init__(self, backbone=resnet50, projection_head=None):
         super().__init__()
 
         self.backbone = backbone
@@ -48,7 +48,7 @@ class ContrastiveLearner(nn.Module):
         z_  = self.encoder(x_)
         loss= self.loss(z,z_)
         
-        return loss
+        return {'loss':loss}
 
 
 

@@ -2,7 +2,8 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from PIL import ImageFilter
-from PIL import Image 
+from PIL import Image
+
 
 class GaussianSmoothing(object):
     def __init__(self, radius):
@@ -10,6 +11,7 @@ class GaussianSmoothing(object):
 
     def __call__(self, image):
         return image.filter(ImageFilter.GaussianBlur(self.radius))
+
 
 def cifar_train_transforms():
     all_transforms = transforms.Compose([
@@ -91,49 +93,65 @@ class MNISTC(datasets.MNIST):
 
 
 class Loader(object):
-    def __init__(self, dataset_name, file_path,
-                batch_size, train_transform,
-                test_transform, target_transform,
-                use_cuda):
+    def __init__(self, dataset_ident, file_path, download, batch_size, train_transform, test_transform, target_transform, use_cuda):
 
-                kwargs = {'num_of_worker':4, 'pin_memory':True} if use_cuda else {}
+        kwargs = {'num_workers': 4, 'pin_memory': True} if use_cuda else {}
 
         loader_map = {
             'CIFAR10C': CIFAR10C,
-            'CIFAR10':datasets.CIFAR10,
+            'CIFAR10': datasets.CIFAR10,
             'MNIST': datasets.MNIST,
-            'MNISTC':MNISTC
-                    }
+            'MNISTC': MNISTC
+        }
 
         num_class = {
             'CIFAR10C': 10,
-            'CIFAR10':10,
+            'CIFAR10': 10,
             'MNIST': 10,
-            'MNISTC':10
-                    }
+            'MNISTC': 10
+        }
 
-        # get the datasets 
-        train_dataset, test_dataset = self.get_dataset(loader_map[dataset_name], file_path,
-                                                        download, train_transform, test_transform,
-                                                        target_transform)
-    
-        #get the loaders
+        # Get the datasets
+        train_dataset, test_dataset = self.get_dataset(loader_map[dataset_ident], file_path, download,
+                                                       train_transform, test_transform, target_transform)
+        # Set the loaders
         self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
-        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs) 
+        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
         tmp_batch = self.train_loader.__iter__().__next__()[0]
-        self.img_shape = list(tmp_batch())[1:]
-        self.num_class = num_class(dataset_name)
+        self.img_shape = list(tmp_batch.size())[1:]
+        self.num_class = num_class[dataset_ident]
 
     @staticmethod
     def get_dataset(dataset, file_path, download, train_transform, test_transform, target_transform):
 
-        training_dataset = dataset(file_path, train=True,download=download,
-                                    transform=train_transform,
-                                    target_transform=target_transform)
-        
-        test_dataset = dataset(file_path, train=False,download=download,
-                                    transform=train_transform,
-                                    target_transform=target_transform)
-        
-        return training_dataset, test_transform
+        # Training and Validation datasets
+        train_dataset = dataset(file_path, train=True, download=download,
+                                transform=train_transform,
+                                target_transform=target_transform)
+
+        test_dataset = dataset(file_path, train=False, download=download,
+                               transform=test_transform,
+                               target_transform=target_transform)
+
+        return train_dataset, test_dataset
+
+
+if __name__=="__main__":
+    
+    dataset_name = 'CIFAR10C'
+    file_path   =   "/home/nikhil/dev/clr/dataset"
+    download    =   False
+    batch_size = 16
+    train_transform = cifar_train_transforms()
+    test_transform  = cifar_test_transforms()
+    target_transform = None
+    use_cuda = False
+    
+    
+    loader = Loader(
+        dataset_name,    file_path,download,
+        batch_size, train_transform,
+        test_transform, target_transform,
+        use_cuda
+    )
