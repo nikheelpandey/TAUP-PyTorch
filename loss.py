@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class ContrastiveLoss(nn.Module):
 
@@ -10,30 +11,39 @@ class ContrastiveLoss(nn.Module):
 
     def forward(self,xi,xj):
 
-        x = torch.cat((xi,xj),dim=0)
-        is_cuda = xi.is_cuda 
-        N, _ = xi.shape
-
-        # nominator : -->  e^ (sim(positive pair) / temp)
-        # why normalize ?
-        if self.normalize:
-            sim_match_denom = torch.norm(xi, dim=1) * torch.norm(xj, dim=1)
-            sim_match = torch.exp((torch.sum(xi * xj, dim = -1)/sim_match_denom) / self.temp) 
-        else: 
-            sim_match = torch.exp(torch.sum(xi * xj, dim = -1)/ self.temp)
-
-        # mutual similarities between each paris
-        sim_mat = torch.mm(x,x.T)
-        if self.normalize:
-            # x*x.T
-            sim_mat_norm = torch.mm(torch.norm(x, dim=1).unsqueeze(1),  torch.norm(x, dim=1).unsqueeze(1).T )
-            sim_mat = sim_mat / sim_mat_norm.clamp(min=1e-16)
-        else: 
-            sim_mat = sim_match = torch.exp(torch.sum(xi * xj, dim=-1) / self.temp)
-
-        norm_sum = torch.exp(torch.ones(x.size(0)) / self.temp)
-        norm_sum = norm_sum.cuda() if is_cuda else norm_sum
-        loss = torch.mean(-torch.log(sim_match/ (torch.sum(sim_mat, dim=-1)- norm_sum)))
+        z1 = F.normalize(xi, dim=1)
+        z2 = F.normalize(xj, dim=1)
         
-        return loss / 2*N
+        N, Z = z1.shape 
+        device = z1.device 
+        
+        representations = torch.cat([z1, z2], dim=0)
+        similarity_matrix = torch.mm(representations, representations.T)
 
+        # create positive matches
+        l_pos = torch.diag(similarity_matrix, N)
+        r_pos = torch.diag(similarity_matrix, -N)
+        positives = torch.cat([l_pos, r_pos]).view(2 * N, 1)
+
+        # print(positives)
+
+        # get the values of every pair that's a mismatch
+        diag = torch.eye(2*N, dtype=torch.bool, device=device)
+        diag[N:,:N] = diag[:N,N:] = diag[:N,:N]        
+        negatives = similarity_matrix[~diag].view(2*N, -1)
+
+        logits = torch.cat([positives, negatives], dim=1)
+        labels = torch.zeros(2*N, device=device, dtype=torch.int64)
+
+        loss = F.cross_entropy(logits, labels, reduction='sum')
+        # print(labels)
+        
+        return loss / (2 * N)
+
+if __name__ == "__main__":
+    main = torch.rand(4,256)
+    augm = torch.rand(4,256)
+    # print((main*augm).shape)
+    # print(torch.sum(main * augm, dim = -1))
+    loss = ContrastiveLoss()
+    loss(main,augm)
