@@ -21,3 +21,18 @@ def init_weights(module):
         elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
             nn.init.constant_(m.weight, 1)
             nn.init.constant_(m.bias, 0)
+
+
+
+
+
+def execute_graph(model, loader, optimizer, scheduler, epoch, use_cuda):
+    t_loss = train_validate(model, loader, optimizer, True, epoch, use_cuda)
+    v_loss = train_validate(model, loader, optimizer, False, epoch, use_cuda)
+
+    scheduler.step(v_loss)
+
+    logger.add_scalar(log_dir + '/train-loss', t_loss, epoch)
+    logger.add_scalar(log_dir + '/valid-loss', v_loss, epoch)
+
+    return v_loss

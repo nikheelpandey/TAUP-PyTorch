@@ -134,3 +134,6 @@ dataset/
 
 #tensorboard
 tb/
+
+#ckpt
+ckpt/

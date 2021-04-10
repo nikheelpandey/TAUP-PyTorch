@@ -4,6 +4,12 @@ from loss import ContrastiveLoss
 from torchvision.models import resnet50
 
 
+def get_backbone(backbone, castrate=True):
+    if castrate:
+        backbone.output_dim = backbone.fc.in_features
+        backbone.fc = torch.nn.Identity()
+    return backbone
+
 class ProjectionHead(nn.Module):
     def __init__(self,in_shape,out_shape=256):
         super().__init__()
@@ -30,11 +36,11 @@ class ProjectionHead(nn.Module):
 
 
 class ContrastiveLearner(nn.Module):
-    def __init__(self, backbone=None, projection_head=None):
+    def __init__(self, backbone=resnet50(), projection_head=None):
         super().__init__()
 
-        self.backbone = backbone
-        self.projection_head = projection_head(backbone.output_dim)
+        self.backbone = get_backbone(backbone)
+        self.projection_head = ProjectionHead(backbone.output_dim)
         self.loss = ContrastiveLoss(temp=0.5, normalize= True)
 
         self.encoder = nn.Sequential(
@@ -51,4 +57,11 @@ class ContrastiveLearner(nn.Module):
         return loss
 
 
+
+if __name__=="__main__":
+    print(resnet50().fc.in_features)
+    # eval(f'{resnet50()}')
+    # backbone = (resnet50().eval)
+    # print(type(backbone))
+    # print(backbone.fc.in_features)
 
