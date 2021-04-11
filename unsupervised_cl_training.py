@@ -9,8 +9,10 @@ import time
 from datetime import datetime 
 from knn_monitor import knn_monitor
 from model import ContrastiveLearner
-from dataset_loader import get_train_memory_test_loaders
+from dataset_loader import get_train_mem_test_dataloaders, gpu_train_transformer,gpu_test_transformer
 from logger import Logger
+
+
 
 
 uid = 'SimCLR'
@@ -18,12 +20,13 @@ dataset_name = 'cifar10'
 data_dir = 'dataset'
 ckpt_dir = "./ckpt"
 features = 128
-batch = 16
+batch = 48
 accumulation = 4
 epochs = 15
 lr = 1e-3
 use_cuda = True
 device_id = 0
+image_size = (32,32)
 wt_decay  = 0.9
  
 
@@ -52,11 +55,15 @@ if not os.path.exists('runs'):
 
 logger = Logger(log_dir=log_dir, tensorboard=True, matplotlib=True)
 
-train_loader, memory_loader, test_loader =  get_train_memory_test_loaders(dataset = dataset_name,
+train_loader, memory_loader, test_loader =  get_train_mem_test_dataloaders(dataset = dataset_name,
                                                         data_dir=data_dir, 
                                                         batch_size = batch, 
                                                         num_workers = 4,
                                                         download=True)
+train_transform = gpu_train_transformer(image_size)
+test_transform = gpu_test_transformer(image_size)
+
+
 
 model = ContrastiveLearner().to(device)
 optimizer = optim.Adam(model.parameters(), 
@@ -70,12 +77,17 @@ accuracy = 0
 # start training 
 global_progress = tqdm(range(0, epochs), desc=f'Training')
 data_dict = {"loss": 100}
+
 for epoch in global_progress:
     model.train()   
 
     local_progress = tqdm(train_loader, desc=f'Epoch {epoch}/{epochs}')
 
-    for idx, ((image, aug_image), label) in enumerate(local_progress):
+    for idx, (image, label) in enumerate(local_progress):
+
+        image = image.to(device)
+        aug_image = train_transform(image)
+        
 
         model.zero_grad()
         loss = model.forward(image.to(device, non_blocking=True),aug_image.to(device, non_blocking=True))
