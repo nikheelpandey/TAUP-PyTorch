@@ -9,15 +9,16 @@ import time
 from datetime import datetime 
 from knn_monitor import knn_monitor
 from model import ContrastiveLearner
-from data import Loader, cifar_test_transforms, cifar_train_transforms
+from data import get_train_memory_test_loaders
 from logger import Logger
 
+
 uid = 'SimCLR'
-dataset_name = 'CIFAR10C'
+dataset_name = 'cifar10'
 data_dir = 'dataset'
 ckpt_dir = "./ckpt"
 features = 128
-batch = 4
+batch = 16
 accumulation =4
 epochs = 15
 lr = 1e-3
@@ -51,20 +52,10 @@ if not os.path.exists('runs'):
 
 logger = Logger(log_dir=log_dir, tensorboard=True, matplotlib=True)
 
-
-in_channel = 3
-train_transform = cifar_train_transforms()
-test_transform = cifar_test_transforms()
-target_transform = None
-
-
-loader = Loader(dataset_name, data_dir,True, 
-                batch, train_transform, test_transform,
-                target_transform, use_cuda)
-
-
-train_loader = loader.train_loader
-test_loader = loader.test_loader
+train_loader, memory_loader, test_loader =  get_train_memory_test_loaders(dataset = dataset_name,
+                                                        data_dir=data_dir, 
+                                                        batch_size = batch, 
+                                                        download=True)
 
 model = ContrastiveLearner().to(device)
 optimizer = optim.Adam(model.parameters(), 
@@ -83,7 +74,7 @@ for epoch in global_progress:
 
     local_progress = tqdm(train_loader, desc=f'Epoch {epoch}/{epochs}')
 
-    for idx, (image, aug_image, label) in enumerate(local_progress):
+    for idx, ((image, aug_image), label) in enumerate(local_progress):
 
         model.zero_grad()
         loss = model.forward(image.to(device, non_blocking=True),aug_image.to(device, non_blocking=True))
