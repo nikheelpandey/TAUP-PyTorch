@@ -9,7 +9,7 @@ import time
 from datetime import datetime 
 from knn_monitor import knn_monitor
 from model import ContrastiveLearner
-from data import get_train_memory_test_loaders
+from dataset_loader import get_train_memory_test_loaders
 from logger import Logger
 
 
@@ -19,7 +19,7 @@ data_dir = 'dataset'
 ckpt_dir = "./ckpt"
 features = 128
 batch = 16
-accumulation =4
+accumulation = 4
 epochs = 15
 lr = 1e-3
 use_cuda = True
@@ -55,6 +55,7 @@ logger = Logger(log_dir=log_dir, tensorboard=True, matplotlib=True)
 train_loader, memory_loader, test_loader =  get_train_memory_test_loaders(dataset = dataset_name,
                                                         data_dir=data_dir, 
                                                         batch_size = batch, 
+                                                        num_workers = 4,
                                                         download=True)
 
 model = ContrastiveLearner().to(device)
