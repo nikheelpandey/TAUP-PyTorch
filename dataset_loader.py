@@ -171,7 +171,7 @@ def get_train_mem_test_dataloaders(dataset = "cifar10", data_dir="./dataset", ba
 
 
 
-def get_train_transformer():
+def gpu_train_transformer():
 
     train_transform = nn.Sequential(
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.2,1.0)),
@@ -183,13 +183,12 @@ def get_train_transformer():
     return train_transform
 
 
-def get_test_transformer():
+def gpu_test_transformer():
 
     test_transform = nn.Sequential(
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.2,1.0)),
                 kornia.augmentation.RandomHorizontalFlip(),
                 kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.5),
-                kornia.augmentation.RandomGrayscale(p=0.2),
             )
 
     return test_transform
