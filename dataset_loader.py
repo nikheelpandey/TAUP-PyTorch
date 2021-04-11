@@ -148,14 +148,14 @@ class InitalTransformation():
 def get_train_mem_test_dataloaders(dataset = "cifar10", data_dir="./dataset", batch_size = 16,num_workers = 4, download=True): 
     
     train_loader = torch.utils.data.DataLoader(
-        dataset = torchvision.datasets.CIFAR10(data_dir, train=train, transform=InitalTransformation(), download=download),
+        dataset = torchvision.datasets.CIFAR10(data_dir, train=True, transform=InitalTransformation(), download=download),
         shuffle=True,
         batch_size= batch_size,
         num_workers = num_workers
     )
     
     memory_loader = torch.utils.data.DataLoader(
-        dataset = torchvision.datasets.CIFAR10(data_dir, train=train, transform=InitalTransformation(), download=download),
+        dataset = torchvision.datasets.CIFAR10(data_dir, train=True, transform=InitalTransformation(), download=download),
         shuffle=False,
         batch_size= batch_size,
         num_workers = num_workers
@@ -171,8 +171,8 @@ def get_train_mem_test_dataloaders(dataset = "cifar10", data_dir="./dataset", ba
 
 
 
-def gpu_train_transformer():
-
+def gpu_train_transformer(image_size,s=1.0):
+    
     train_transform = nn.Sequential(
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.2,1.0)),
                 kornia.augmentation.RandomHorizontalFlip(),
@@ -183,7 +183,7 @@ def gpu_train_transformer():
     return train_transform
 
 
-def gpu_test_transformer():
+def gpu_test_transformer(image_size,s=1.0):
 
     test_transform = nn.Sequential(
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.2,1.0)),
