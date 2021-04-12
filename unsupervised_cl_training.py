@@ -9,21 +9,25 @@ import time
 from datetime import datetime 
 from knn_monitor import knn_monitor
 from model import ContrastiveLearner
-from data import Loader, cifar_test_transforms, cifar_train_transforms
+from dataset_loader import get_train_mem_test_dataloaders, gpu_train_transformer,gpu_test_transformer
+from logger import Logger
+
+
 
 
 uid = 'SimCLR'
-dataset_name = 'CIFAR10C'
+dataset_name = 'cifar10'
 data_dir = 'dataset'
 ckpt_dir = "./ckpt"
 features = 128
-batch = 4
-accumulation =4
-epochs = 150
+batch = 48
+accumulation = 4
+epochs = 15
 lr = 1e-3
-use_cuda = False
+use_cuda = True
 device_id = 0
-wt_decay  = True
+image_size = (32,32)
+wt_decay  = 0.9
  
 
 if use_cuda:
@@ -47,23 +51,21 @@ if not os.path.exists('runs'):
     os.makedirs('runs')
 
 
-logger = SummaryWriter(comment='_' +  uid + '_' + dataset_name)
+# logger = SummaryWriter(comment='_' +  uid + '_' + dataset_name)
 
-in_channel = 3
-train_transform = cifar_train_transforms()
-test_transform = cifar_test_transforms()
-target_transform = None
+logger = Logger(log_dir=log_dir, tensorboard=True, matplotlib=True)
+
+train_loader, memory_loader, test_loader =  get_train_mem_test_dataloaders(dataset = dataset_name,
+                                                        data_dir=data_dir, 
+                                                        batch_size = batch, 
+                                                        num_workers = 4,
+                                                        download=True)
+train_transform = gpu_train_transformer(image_size)
+test_transform = gpu_test_transformer(image_size)
 
 
-loader = Loader(dataset_name, data_dir,True, 
-                batch, train_transform, test_transform,
-                target_transform, use_cuda)
 
-
-train_loader = loader.train_loader
-test_loader = loader.test_loader
-
-model = ContrastiveLearner()
+model = ContrastiveLearner().to(device)
 optimizer = optim.Adam(model.parameters(), 
             lr=lr,
             weight_decay=wt_decay) 
@@ -74,26 +76,30 @@ accuracy = 0
 
 # start training 
 global_progress = tqdm(range(0, epochs), desc=f'Training')
+data_dict = {"loss": 100}
 
 for epoch in global_progress:
     model.train()   
 
     local_progress = tqdm(train_loader, desc=f'Epoch {epoch}/{epochs}')
 
-    for idx, (image, aug_image, label) in enumerate(local_progress):
+    for idx, (image, label) in enumerate(local_progress):
+
+        image = image.to(device)
+        aug_image = train_transform(image)
+        
 
         model.zero_grad()
-        data_dict = model.forward(image.to(device, non_blocking=True),aug_image.to(device, non_blocking=True))
+        loss = model.forward(image.to(device, non_blocking=True),aug_image.to(device, non_blocking=True))
 
-        loss =  data_dict['loss'].mean()
+        # loss =  data_dict['loss'].mean()
+        data_dict['loss'] = loss.item() 
         loss.backward()
         optimizer.step()
         scheduler.step()
-        data_dict.update({'lr': scheduler.get_lr()})
+        data_dict.update({'lr': scheduler.get_lr()[0]})
         local_progress.set_postfix(data_dict)
         logger.update_scalers(data_dict)
-
-        # accuracy = knn_monitor(model.module.backbone, memory_loader, test_loader, device, k=min(args.train.knn_k, len(memory_loader.dataset)), hide_progress=True) 
 
     epoch_dict = {'epoch':epoch, 'accuracy':accuracy}
     global_progress.set_postfix(epoch_dict)
