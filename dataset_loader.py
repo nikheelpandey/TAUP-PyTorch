@@ -136,8 +136,7 @@ class InitalTransformation():
     def __init__(self, image_size=None, s=1.0):
         image_size = 224 if image_size is None else image_size 
         self.transform = T.Compose([
-            T.ToTensor(),
-            T.Normalize(CIFAR_MEAN,CIFAR_STD)
+            T.ToTensor()
         ])
 
     def __call__(self, x):
