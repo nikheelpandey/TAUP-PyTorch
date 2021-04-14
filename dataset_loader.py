@@ -20,9 +20,12 @@ from PIL import ImageFilter
 import matplotlib.pyplot as plt
 
 
-CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
-CIFAR_STD  = [0.24703233, 0.24348505, 0.26158768]
+CIFAR_MEAN =  [0.49139968, 0.48215827, 0.44653124]
+CIFAR_STD  =  [0.24703233, 0.24348505, 0.26158768]
 
+
+CIFAR_MEAN_ =  torch.FloatTensor([CIFAR_MEAN, CIFAR_STD])
+CIFAR_STD_  =  torch.FloatTensor([CIFAR_MEAN, CIFAR_STD])
 
 
 class TransformSingles():
@@ -136,7 +139,8 @@ class InitalTransformation():
     def __init__(self, image_size=None, s=1.0):
         image_size = 224 if image_size is None else image_size 
         self.transform = T.Compose([
-            T.ToTensor()
+            T.ToTensor(),
+            # transforms.Normalize(CIFAR_MEAN_,CIFAR_STD_),
         ])
 
     def __call__(self, x):
@@ -171,12 +175,14 @@ def get_train_mem_test_dataloaders(dataset = "cifar10", data_dir="./dataset", ba
 
 
 def gpu_train_transformer(image_size,s=1.0):
-    
+        
+
     train_transform = nn.Sequential(
-                kornia.augmentation.RandomResizedCrop(image_size,scale=(0.2,1.0)),
-                kornia.augmentation.RandomHorizontalFlip(),
-                kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.5),
-                kornia.augmentation.RandomGrayscale(p=0.2),
+                
+                kornia.augmentation.RandomResizedCrop(image_size,scale=(0.8,1.0)),
+                kornia.augmentation.RandomHorizontalFlip(p=0.5),
+                kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.3),
+                kornia.augmentation.RandomGrayscale(p=0.1),
             )
 
     return train_transform
@@ -185,10 +191,10 @@ def gpu_train_transformer(image_size,s=1.0):
 def gpu_test_transformer(image_size,s=1.0):
 
     test_transform = nn.Sequential(
-                kornia.augmentation.RandomResizedCrop(image_size,scale=(0.2,1.0)),
-                kornia.augmentation.RandomHorizontalFlip(),
-                kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.5),
-            )
+                kornia.augmentation.RandomResizedCrop(image_size,scale=(0.8,1.0)),
+                kornia.augmentation.RandomHorizontalFlip(p=0.5),
+                kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.3),
+        )
 
     return test_transform
                 
