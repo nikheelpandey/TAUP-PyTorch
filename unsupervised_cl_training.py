@@ -20,14 +20,14 @@ dataset_name = 'cifar10'
 data_dir = 'dataset'
 ckpt_dir = "./ckpt"
 features = 128
-batch = 48
+batch = 512
 accumulation = 4
-epochs = 15
+epochs = 3
 lr = 1e-3
 use_cuda = True
 device_id = 0
 image_size = (32,32)
-wt_decay  = 0.9
+wt_decay  = 0.99
  
 
 if use_cuda:
@@ -41,7 +41,7 @@ else:
 
 
 # Setup tensorboard
-log_dir = "./tb" 
+log_dir = "./runs" 
 
 # Setup asset directories
 if not os.path.exists('models'):
@@ -49,6 +49,9 @@ if not os.path.exists('models'):
 
 if not os.path.exists('runs'):
     os.makedirs('runs')
+    
+if not os.path.exists('ckpt'):
+    os.makedirs('ckpt')
 
 
 # logger = SummaryWriter(comment='_' +  uid + '_' + dataset_name)
@@ -68,8 +71,9 @@ test_transform = gpu_test_transformer(image_size)
 model = ContrastiveLearner().to(device)
 optimizer = optim.Adam(model.parameters(), 
             lr=lr,
-            weight_decay=wt_decay) 
-scheduler = ExponentialLR(optimizer, gamma=wt_decay)
+            weight_decay=False) 
+scheduler = ExponentialLR(optimizer, gamma= 1)
+
 
 min_loss = np.inf #ironic
 accuracy = 0
@@ -77,22 +81,18 @@ accuracy = 0
 # start training 
 global_progress = tqdm(range(0, epochs), desc=f'Training')
 data_dict = {"loss": 100}
-
 for epoch in global_progress:
     model.train()   
 
     local_progress = tqdm(train_loader, desc=f'Epoch {epoch}/{epochs}')
-
     for idx, (image, label) in enumerate(local_progress):
-
+        
         image = image.to(device)
         aug_image = train_transform(image)
-        
 
         model.zero_grad()
         loss = model.forward(image.to(device, non_blocking=True),aug_image.to(device, non_blocking=True))
 
-        # loss =  data_dict['loss'].mean()
         data_dict['loss'] = loss.item() 
         loss.backward()
         optimizer.step()
@@ -100,7 +100,8 @@ for epoch in global_progress:
         data_dict.update({'lr': scheduler.get_lr()[0]})
         local_progress.set_postfix(data_dict)
         logger.update_scalers(data_dict)
-
+        
+    accuracy = knn_monitor(model.backbone, memory_loader, test_loader, device, hide_progress=True) 
     epoch_dict = {'epoch':epoch, 'accuracy':accuracy}
     global_progress.set_postfix(epoch_dict)
     logger.update_scalers(epoch_dict)
@@ -111,7 +112,3 @@ torch.save({
     'state_dict': model.module.state_dict()
         }, model_path)
 print(f'Model saved at: {model_path}')
-
-
-
-

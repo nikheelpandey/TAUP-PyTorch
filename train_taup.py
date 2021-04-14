@@ -288,9 +288,15 @@ for epoch in global_progress:
     global_progress.set_postfix(epoch_dict)
     logger.update_scalers(epoch_dict)
 
+
+
 model_path = os.path.join(ckpt_dir, f"{uid}_{datetime.now().strftime('%m%d%H%M%S')}.pth")
+
+with open(model_path, 'w') as fp:
+    pass
+
 torch.save({
     'epoch':epoch+1,
-    'state_dict': model.module.state_dict()
+    'state_dict': model.state_dict()
         }, model_path)
 print(f'Model saved at: {model_path}')
