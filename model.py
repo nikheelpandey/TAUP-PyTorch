@@ -34,7 +34,7 @@ class ProjectionHead(nn.Module):
 
         return x
 
-
+# TAUP part
 class ContrastiveLearner(nn.Module):
     def __init__(self, backbone=resnet50(), projection_head=None):
         super().__init__()
@@ -58,10 +58,30 @@ class ContrastiveLearner(nn.Module):
 
 
 
+# Fine Tunning
+class FineTunedModel(nn.Module):
+
+    def __init__(self, num_classes=10, encoder=None):
+        super().__init__()
+        self.num_classes = num_classes
+        encoder = encoder
+        fc = nn.Linear(encoder.output_dim, self.num_classes)
+        self.model = nn.Sequential(
+            encoder,
+            fc
+            )
+        
+  
+    def forward(self, image):
+        logits = self.model(image)
+        return logits
+        
+
+
 if __name__=="__main__":
     print(resnet50().fc.in_features)
-    # eval(f'{resnet50()}')
-    # backbone = (resnet50().eval)
-    # print(type(backbone))
-    # print(backbone.fc.in_features)
+    eval(f'{resnet50()}')()
+    backbone = (resnet50().eval)
+    print(type(backbone))
+    print(backbone.fc.in_features)
 

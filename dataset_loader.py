@@ -154,7 +154,7 @@ def get_train_mem_test_dataloaders(dataset = "cifar10", data_dir="./dataset", ba
     )
     
     memory_loader = torch.utils.data.DataLoader(
-        dataset = torchvision.datasets.CIFAR10(data_dir, train=True, transform=InitalTransformation(), download=download),
+        dataset = torchvision.datasets.CIFAR10(data_dir, train=False, transform=InitalTransformation(), download=download),
         shuffle=False,
         batch_size= batch_size,
         num_workers = num_workers
