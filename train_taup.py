@@ -20,10 +20,6 @@ from dataset_loader import get_train_mem_test_dataloaders
 
 
 
-uid = 'SimCLR'
-dataset_name = 'cifar10'
-data_dir = 'dataset'
-ckpt_dir = "./ckpt"
 
 if torch.cuda.is_available():
     dtype = torch.cuda.FloatTensor
@@ -35,18 +31,22 @@ else:
     device = torch.device("cpu")
 
 
-# Setup tensorboard
-log_dir = "runs"
+
+uid = 'SimCLR'
+dataset_name = 'cifar10'
+data_dir = 'dataset'
+ckpt_dir = "./ckpt/"+str(datetime.now().strftime('%m%d%H%M%S'))
+log_dir = "runs/"+str(datetime.now().strftime('%m%d%H%M%S'))
 
 #create dataset folder 
-if not os.path.exists('dataset'):
-    os.makedirs('dataset')
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
 # Setup asset directories
-if not os.path.exists('ckpt'):
-    os.makedirs('ckpt')
+if not os.path.exists(ckpt_dir):
+    os.makedirs(ckpt_dir)
 
-if not os.path.exists('runs'):
-    os.makedirs('runs')
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
     
 logger = Logger(log_dir=log_dir, tensorboard=True, matplotlib=True)
 
@@ -58,10 +58,10 @@ loss_func  = ContrastiveLoss().to(device)
 
 features = 128
 batch_size = batch = 2048
-epochs = 10
+epochs = 25
 lr = 1e-4
 device_id = 0
-wt_decay  = 0.99
+wt_decay  = 0.90
 image_size = (32,32)
 
 
@@ -103,15 +103,16 @@ for epoch in global_progress:
         loss.backward()
         optimizer.step()
         scheduler.step()
-        data_dict.update({'lr': scheduler.get_lr()[0]})
+        data_dict.update({'lr': scheduler.get_last_lr()[0]})
         local_progress.set_postfix(data_dict)
         logger.update_scalers(data_dict)
     
     current_loss = data_dict['loss']
     accuracy = knn_monitor(model.backbone, memory_loader, test_loader, 'cpu', hide_progress=True) 
+    data_dict['accuracy'] = accuracy
     epoch_dict = {'epoch':epoch, 'accuracy':accuracy}
-    global_progress.set_postfix(epoch_dict)
-    logger.update_scalers(epoch_dict)
+    global_progress.set_postfix(data_dict)
+    logger.update_scalers(data_dict)
     
     model_path = os.path.join(ckpt_dir, f"{uid}_{datetime.now().strftime('%m%d%H%M%S')}.pth")
 

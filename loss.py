@@ -38,20 +38,9 @@ class ContrastiveLoss(nn.Module):
         labels = torch.zeros(2*N, device=device, dtype=torch.int64)
         loss = F.cross_entropy(logits, labels, reduction='sum')
         
-        return loss / (2 * N)
+        return (loss / (2 * N))
 
 
-
-        # no idea why this isn't working
-        
-        # #         print(positives)
-        # #         print(negatives)
-                
-        # exp_upper = (torch.exp(torch.sum(positives, dim=1)))
-        # exp_lower = (torch.exp((torch.sum(negatives,dim=1))))
-        
-        # loss = (torch.mean(-torch.log(exp_upper/exp_lower)))
-        # return loss / (2 * N)
 
 if __name__ == "__main__":
     main = torch.rand(4,256)

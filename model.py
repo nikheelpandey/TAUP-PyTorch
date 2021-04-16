@@ -28,7 +28,7 @@ class ProjectionHead(nn.Module):
 
     def forward(self,x):
         x = self.layer_1(x)
-        x = self.layer_2(x)
+        # x = self.layer_2(x)
         x = self.layer_3(x)
 
         return x
@@ -51,7 +51,6 @@ class ContrastiveModel(nn.Module):
         z   = self.encoder(x)
         return z
 
-
 # Fine Tunning
 class FineTunedModel(nn.Module):
 
@@ -65,11 +64,9 @@ class FineTunedModel(nn.Module):
             fc
             )
         
-  
     def forward(self, image):
         logits = self.model(image)
         return logits
-        
 
 
 if __name__=="__main__":
@@ -78,4 +75,3 @@ if __name__=="__main__":
     backbone = (resnet50().eval)
     print(type(backbone))
     print(backbone.fc.in_features)
-
