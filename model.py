@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from loss import ContrastiveLoss
 from torchvision.models import resnet50
 
 
@@ -35,27 +34,22 @@ class ProjectionHead(nn.Module):
         return x
 
 # TAUP part
-class ContrastiveLearner(nn.Module):
-    def __init__(self, backbone=resnet50(), projection_head=None):
+class ContrastiveModel(nn.Module):
+    def __init__(self,backbone):
         super().__init__()
-
-        self.backbone = get_backbone(backbone)
-        self.projection_head = ProjectionHead(backbone.output_dim)
-        self.loss = ContrastiveLoss(temp=0.5, normalize= True)
-
+        self.output_dim = 256
+        
+        self.backbone=backbone
+        self.projectionhead= ProjectionHead(backbone.output_dim)
+        
         self.encoder = nn.Sequential(
-            self.backbone,
-            self.projection_head
-        )
-
-    def forward(self,x,x_):
+                        self.backbone,
+                        self.projectionhead,
+                        )
         
+    def forward(self,x):
         z   = self.encoder(x)
-        z_  = self.encoder(x_)
-        loss= self.loss(z,z_)
-        
-        return loss
-
+        return z
 
 
 # Fine Tunning
