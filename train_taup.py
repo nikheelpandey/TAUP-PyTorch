@@ -58,7 +58,7 @@ loss_func  = ContrastiveLoss().to(device)
 
 features = 128
 batch_size = batch = 2048
-epochs = 150
+epochs = 10
 lr = 1e-4
 device_id = 0
 wt_decay  = 0.99
