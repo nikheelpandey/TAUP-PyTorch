@@ -28,7 +28,7 @@ class ProjectionHead(nn.Module):
 
     def forward(self,x):
         x = self.layer_1(x)
-        # x = self.layer_2(x)
+        x = self.layer_2(x)
         x = self.layer_3(x)
 
         return x
@@ -54,19 +54,21 @@ class ContrastiveModel(nn.Module):
 # Fine Tunning
 class FineTunedModel(nn.Module):
 
-    def __init__(self, num_classes=10, encoder=None):
+    def __init__(self, encoder,input_dim, num_classes=10 ):
         super().__init__()
+        self.input_dim =  input_dim
         self.num_classes = num_classes
-        encoder = encoder
-        fc = nn.Linear(encoder.output_dim, self.num_classes)
+        self.encoder = encoder
+        self.fc = nn.Linear(self.input_dim, self.num_classes)
         self.model = nn.Sequential(
-            encoder,
-            fc
-            )
+                        self.encoder,
+                        self.fc
+        )
         
-    def forward(self, image):
-        logits = self.model(image)
-        return logits
+    def forward(self, x):
+        z = self.model(x)
+        return z
+    
 
 
 if __name__=="__main__":
