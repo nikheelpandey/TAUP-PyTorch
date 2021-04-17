@@ -51,7 +51,7 @@ backbone= get_backbone(resnet18(pretrained=False))
 model = ContrastiveModel(backbone).to(device)
 loss_func  = ContrastiveLoss().to(device)
 
-# hyperparams
+#hyperparams
 features = 128
 batch_size = batch = 2048
 epochs = 25 #use num_epochs if you have time and resources to train. Else, for POC, 25 epochs should yield a decreasing loss. 
