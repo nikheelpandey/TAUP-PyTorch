@@ -7,7 +7,7 @@ from lars import LARS
 from tqdm import tqdm 
 import torch.optim as optim
 from datetime import datetime 
-from knn_monitor import knn_monitor
+from knn_monitor import knn_monitor as accuracy_monitor
 from tensorboardX import SummaryWriter
 from lr_scheduler import LR_Scheduler
 
@@ -133,7 +133,7 @@ for epoch in global_progress:
     current_loss = data_dict['loss']
 
     if epoch % knn_interval == 0: 
-        accuracy = knn_monitor(model.backbone, memory_loader, test_loader, 'cpu', hide_progress=True) 
+        accuracy = accuracy_monitor(model.backbone, memory_loader, test_loader, 'cpu', hide_progress=True) 
         data_dict['accuracy'] = accuracy
     
     global_progress.set_postfix(data_dict)
