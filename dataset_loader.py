@@ -71,14 +71,14 @@ def gpu_transformer(image_size,s=.2):
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.5,1.0)),
                 kornia.augmentation.RandomHorizontalFlip(p=0.5),
                 kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.3),
-                kornia.augmentation.RandomGrayscale(p=0.05),
+                # kornia.augmentation.RandomGrayscale(p=0.05),
             )
 
     test_transform = nn.Sequential(  
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.5,1.0)),
                 kornia.augmentation.RandomHorizontalFlip(p=0.5),
                 kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.3),
-                kornia.augmentation.RandomGrayscale(p=0.05),
+                # kornia.augmentation.RandomGrayscale(p=0.05),
         )
 
     return train_transform , test_transform
