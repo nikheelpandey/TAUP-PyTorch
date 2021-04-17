@@ -3,24 +3,19 @@ import os
 import time
 import torch 
 import numpy as np
-from lars import LARS
 from tqdm import tqdm 
+from lars import LARS
+from logger import Logger
 import torch.optim as optim
 from datetime import datetime 
-from knn_monitor import knn_monitor as accuracy_monitor
-from tensorboardX import SummaryWriter
-from lr_scheduler import LR_Scheduler
-
-
-from logger import Logger
 from loss import ContrastiveLoss
+from lr_scheduler import LR_Scheduler
+from tensorboardX import SummaryWriter
 from torchvision.models import resnet18
 from dataset_loader import  gpu_transformer
 from model import ContrastiveModel, get_backbone
+from knn_monitor import knn_monitor as accuracy_monitor
 from dataset_loader import get_train_mem_test_dataloaders
-
-
-
 
 if torch.cuda.is_available():
     dtype = torch.cuda.FloatTensor
@@ -59,7 +54,7 @@ loss_func  = ContrastiveLoss().to(device)
 # hyperparams
 features = 128
 batch_size = batch = 2048
-epochs = 25
+epochs = 25 #use num_epochs if you have time and resources to train. Else, for POC, 25 epochs should yield a decreasing loss. 
 lr = 1e-4
 device_id = 0
 weight_decay  = 1.e-6
@@ -78,12 +73,8 @@ knn_monitor =    False # knn monitor will take more time
 knn_interval =   5
 knn_k =      200
 
-
-
 min_loss = np.inf #ironic
 accuracy = 0
-
-
 
 train_loader, memory_loader, test_loader = get_train_mem_test_dataloaders(
                 dataset="cifar10", 
@@ -95,8 +86,6 @@ train_loader, memory_loader, test_loader = get_train_mem_test_dataloaders(
 train_transform , test_transform = gpu_transformer(image_size)
 
 
-
-
 optimizer = LARS(model.named_modules(), lr=lr*batch_size/256, momentum=momentum, weight_decay=weight_decay)
 
 scheduler = LR_Scheduler(
@@ -104,9 +93,8 @@ scheduler = LR_Scheduler(
 
     num_epochs, base_lr*batch_size/256, final_lr*batch_size/256, 
     len(train_loader),
-    constant_predictor_lr=True # see the end of section 4.2 predictor
+    constant_predictor_lr=True 
     )
-
 
 
 global_progress = tqdm(range(0, epochs), desc=f'Training')
