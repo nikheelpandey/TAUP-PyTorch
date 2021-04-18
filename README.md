@@ -21,6 +21,8 @@ Below is the observations for the classifer trained using TAUP and supervised le
 - To train the TAUP model with contrastive loss: ```train_taup.py```
 - To train the clf over the TAUP model          : ```train_classifier.py```
 
-
+### To Do: 
+- The knowledge distilation part
+- Test it out on a dataset more complicated than CIFAR
 
 Reference: https://arxiv.org/pdf/2006.10029.pdf
