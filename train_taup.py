@@ -4,26 +4,18 @@ import time
 import torch 
 import numpy as np
 from tqdm import tqdm 
+from lars import LARS
+from logger import Logger
 import torch.optim as optim
 from datetime import datetime 
-from knn_monitor import knn_monitor
-from tensorboardX import SummaryWriter
-from torch.optim.lr_scheduler import ExponentialLR
-
-
-from logger import Logger
 from loss import ContrastiveLoss
+from lr_scheduler import LR_Scheduler
+from tensorboardX import SummaryWriter
 from torchvision.models import resnet18
 from dataset_loader import  gpu_transformer
 from model import ContrastiveModel, get_backbone
+from knn_monitor import knn_monitor as accuracy_monitor
 from dataset_loader import get_train_mem_test_dataloaders
-
-
-
-uid = 'SimCLR'
-dataset_name = 'cifar10'
-data_dir = 'dataset'
-ckpt_dir = "./ckpt"
 
 if torch.cuda.is_available():
     dtype = torch.cuda.FloatTensor
@@ -35,18 +27,22 @@ else:
     device = torch.device("cpu")
 
 
-# Setup tensorboard
-log_dir = "runs"
+
+uid = 'SimCLR'
+dataset_name = 'cifar10'
+data_dir = 'dataset'
+ckpt_dir = "./ckpt/"+str(datetime.now().strftime('%m%d%H%M%S'))
+log_dir = "runs/"+str(datetime.now().strftime('%m%d%H%M%S'))
 
 #create dataset folder 
-if not os.path.exists('dataset'):
-    os.makedirs('dataset')
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
 # Setup asset directories
-if not os.path.exists('ckpt'):
-    os.makedirs('ckpt')
+if not os.path.exists(ckpt_dir):
+    os.makedirs(ckpt_dir)
 
-if not os.path.exists('runs'):
-    os.makedirs('runs')
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
     
 logger = Logger(log_dir=log_dir, tensorboard=True, matplotlib=True)
 
@@ -55,25 +51,30 @@ backbone= get_backbone(resnet18(pretrained=False))
 model = ContrastiveModel(backbone).to(device)
 loss_func  = ContrastiveLoss().to(device)
 
-
+#hyperparams
 features = 128
 batch_size = batch = 2048
-epochs = 150
+epochs = 25 #use num_epochs if you have time and resources to train. Else, for POC, 25 epochs should yield a decreasing loss. 
 lr = 1e-4
 device_id = 0
-wt_decay  = 0.99
+weight_decay  = 1.e-6
+
 image_size = (32,32)
+momentum = 0.9
 
-
-optimizer = optim.Adam(model.parameters(), 
-            lr=lr,
-            weight_decay=wt_decay) 
-scheduler = ExponentialLR(optimizer, gamma= wt_decay)
+warmup_epochs =  10
+warmup_lr  =     0
+base_lr =    0.3
+final_lr =   0
+num_epochs =     800 # this parameter influence the lr decay
+stop_at_epoch =  100 # has to be smaller than num_epochs
+batch_size =     256
+knn_monitor =    False # knn monitor will take more time
+knn_interval =   5
+knn_k =      200
 
 min_loss = np.inf #ironic
 accuracy = 0
-
-
 
 train_loader, memory_loader, test_loader = get_train_mem_test_dataloaders(
                 dataset="cifar10", 
@@ -84,6 +85,16 @@ train_loader, memory_loader, test_loader = get_train_mem_test_dataloaders(
 
 train_transform , test_transform = gpu_transformer(image_size)
 
+
+optimizer = LARS(model.named_modules(), lr=lr*batch_size/256, momentum=momentum, weight_decay=weight_decay)
+
+scheduler = LR_Scheduler(
+    optimizer, warmup_epochs, warmup_lr*batch_size/256,
+
+    num_epochs, base_lr*batch_size/256, final_lr*batch_size/256, 
+    len(train_loader),
+    constant_predictor_lr=True 
+    )
 
 
 global_progress = tqdm(range(0, epochs), desc=f'Training')
@@ -103,14 +114,16 @@ for epoch in global_progress:
         loss.backward()
         optimizer.step()
         scheduler.step()
-        data_dict.update({'lr': scheduler.get_lr()[0]})
+        data_dict.update({'lr': scheduler.get_last_lr()})
         local_progress.set_postfix(data_dict)
         logger.update_scalers(data_dict)
     
     current_loss = data_dict['loss']
-    accuracy = knn_monitor(model.backbone, memory_loader, test_loader, 'cpu', hide_progress=True) 
-    data_dict['accuracy'] = accuracy
-    epoch_dict = {'epoch':epoch, 'accuracy':accuracy}
+
+    if epoch % knn_interval == 0: 
+        accuracy = accuracy_monitor(model.backbone, memory_loader, test_loader, 'cpu', hide_progress=True) 
+        data_dict['accuracy'] = accuracy
+    
     global_progress.set_postfix(data_dict)
     logger.update_scalers(data_dict)
     
@@ -122,4 +135,4 @@ for epoch in global_progress:
         torch.save({
         'epoch':epoch+1,
         'state_dict': model.state_dict() }, model_path)
-        print(f'Model saved at: {model_path}')
+        # print(f'Model saved at: {model_path}')

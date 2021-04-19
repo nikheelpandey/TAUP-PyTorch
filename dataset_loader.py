@@ -40,6 +40,31 @@ class InitalTransformation():
         return  x
 
 
+def get_clf_train_test_dataloaders(dataset = "cifar10", percent_train_sample = 20,
+                                  data_dir="./dataset", batch_size = 16,
+                                    num_workers = 4, download=True):
+
+    tr = torchvision.datasets.CIFAR10(data_dir, train=True, transform=InitalTransformation(), download=True)
+    samples = list(range(0, int(len(tr)*percent_train_sample/100)))
+    tr_subset =  torch.utils.data.Subset(tr, samples)
+
+    train_loader = torch.utils.data.DataLoader(
+            dataset = tr_subset,
+            shuffle=True,
+            batch_size= batch_size,
+            num_workers = 4 )
+
+    test_loader = torch.utils.data.DataLoader(
+            dataset = torchvision.datasets.CIFAR10(data_dir, train=True,
+                                                transform=InitalTransformation(), download=True),
+            shuffle=True,
+            batch_size= batch_size,
+            num_workers = 4
+        )
+
+    return train_loader, test_loader
+
+
 def get_train_mem_test_dataloaders(dataset = "cifar10", data_dir="./dataset", batch_size = 16,num_workers = 4, download=True): 
     
     train_loader = torch.utils.data.DataLoader(
@@ -71,18 +96,37 @@ def gpu_transformer(image_size,s=.2):
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.5,1.0)),
                 kornia.augmentation.RandomHorizontalFlip(p=0.5),
                 kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.3),
-                kornia.augmentation.RandomGrayscale(p=0.05),
+                # kornia.augmentation.RandomGrayscale(p=0.05),
             )
 
     test_transform = nn.Sequential(  
                 kornia.augmentation.RandomResizedCrop(image_size,scale=(0.5,1.0)),
                 kornia.augmentation.RandomHorizontalFlip(p=0.5),
                 kornia.augmentation.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s,p=0.3),
-                kornia.augmentation.RandomGrayscale(p=0.05),
+                # kornia.augmentation.RandomGrayscale(p=0.05),
         )
 
     return train_transform , test_transform
                 
+def get_clf_train_test_transform(image_size,s=.2):
+        
+    train_transform = nn.Sequential(
+                
+                kornia.augmentation.RandomResizedCrop(image_size,scale=(0.5,1.0)),
+                kornia.augmentation.RandomHorizontalFlip(p=0.5),
+                # kornia.augmentation.Normalize(CIFAR_MEAN_,CIFAR_STD_),
+            )
+
+    test_transform = nn.Sequential(  
+                kornia.augmentation.RandomResizedCrop(image_size,scale=(0.5,1.0)),
+                kornia.augmentation.RandomHorizontalFlip(p=0.5),
+                # kornia.augmentation.RandomGrayscale(p=0.05),
+                # kornia.augmentation.Normalize(CIFAR_MEAN_,CIFAR_STD_)
+        )
+
+    return train_transform , test_transform
+
+
 
 
 if __name__=="__main__":
