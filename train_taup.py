@@ -109,9 +109,10 @@ for epoch in global_progress:
     
     current_loss = data_dict['loss']
     accuracy = knn_monitor(model.backbone, memory_loader, test_loader, 'cpu', hide_progress=True) 
+    data_dict['accuracy'] = accuracy
     epoch_dict = {'epoch':epoch, 'accuracy':accuracy}
-    global_progress.set_postfix(epoch_dict)
-    logger.update_scalers(epoch_dict)
+    global_progress.set_postfix(data_dict)
+    logger.update_scalers(data_dict)
     
     model_path = os.path.join(ckpt_dir, f"{uid}_{datetime.now().strftime('%m%d%H%M%S')}.pth")
 

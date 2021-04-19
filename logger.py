@@ -61,7 +61,6 @@ class Logger(object):
             if self.writer:
                 self.writer.add_scalar(key, value, self.counter[key])
 
-
         if self.plotter: 
             self.plotter.update(ordered_dict)
             self.plotter.save(os.path.join(self.log_dir, 'plotter.svg'))
