@@ -1,4 +1,4 @@
-# Task Agnosgtic Supervised Pretraining
+# Task Agnosgtic Unsupervised Pretraining
 
 
 Crude implementation of simCLR paper. Used the ```LARS``` optimizer over the ```contrastive loss``` function as described in the paper to train a contrastive model. Used this model as encoder and added fully connected layer to create a classifier. 
