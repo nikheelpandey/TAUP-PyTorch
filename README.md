@@ -11,7 +11,8 @@ Below is the observations for the classifer trained using TAUP and supervised le
 |---|---|---|---|
 |Supervised Learning|50000|97.3|   103|
 |TAUP+Supervised Finetuning| 5000  | 93.5  | 45  |
-|TAUP+Supervised Finetuning   | 10000  | 96.9  | 23  |
+|TAUP+Supervised Finetuning   | 10000  | 93.9  | 23  |
+|TAUP+Supervised Finetuning   | 10000  | 95.34  | 45  |
 
 
 
